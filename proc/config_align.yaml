@@ -1,6 +1,6 @@
 constants:
   name: "MIXSED2"
-  ind: [28, 38]               #choose e.g., 10 profiles 
+  ind: [20, 40]               #choose e.g., 10 profiles 
   sample_interval: 1/24
 
 alignment_settings:
