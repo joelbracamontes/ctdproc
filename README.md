@@ -1,16 +1,17 @@
 # ctdproc-MIXSED2
 
 Processes shipboard Sea-Bird SBE 911plus CTD data: raw `.hex`/`.XMLCON` in,
-calibration-corrected `.cnv` out. Built for the **MIXSED2** cruise. Feeds
-its output into [`caldip-MIXSED2`](../caldip-MIXSED2) for calibration-dip
-statistics.
+calibration-corrected `.cnv` out. Named after MIXSED2, the cruise this was
+most recently run against - `load.py` reads any cruise's `.hex`/`.XMLCON`
+pair generically, the `name:`/`ind:` config values just pick which one.
+Feeds its output into [`caldip-MIXSED2`](../caldip-MIXSED2) for
+calibration-dip statistics.
 
 ---
 
 ## Layout
 
 ```text
-ctdproc-MIXSED2_autoconfig/
 ├── src/
 │   ├── ctdproc/                # Pipeline: main.py + 3 finders (below)
 │   └── seabirdscientific/      # Vendored Sea-Bird toolkit, v3.1.2
@@ -145,17 +146,23 @@ against `tests/fixtures/reference/`. Only regenerate those with
 
 - `.cnv` output skips oxygen/chlorophyll/turbidity/PAR (needs per-sensor
   naming from the XMLCON, not yet built).
-- `ctdalign_finder` has no sub-sample precision (whole-scan lags only).
+- `ctdalign_finder`'s lag precision is limited to the data's own sample
+  interval (e.g. one 24 Hz scan ≈ 0.042 s) - it cannot detect a lag
+  smaller than that single step.
 - `cellTM_finder`'s search grid (α 0.01–0.09, τ 1–16) is fixed, not
   configurable per cast/campaign.
 - Vendored `seabirdscientific` just went 2.7.8 → 3.1.2 - a few breaking
   changes were found and fixed along the way (return-type changes,
   a removed `scalar` param, a coefficient casing change, `loop_edit`'s
   return semantics), confirmed via the regression suite.
-- Outlier rejection (`slopecorrection_finder`) and edge-pinning exclusion
-  (`cellTM_finder`) are automatic but silent unless you read the console
-  output or CSV columns - a campaign average can be computed from a
-  minority of casts/bottles with no flag on the summary row itself.
+- `slopecorrection_finder` and `cellTM_finder` can both throw away most of
+  your data to get their final number, without saying so anywhere near
+  that number. `slopecorrection_finder`'s 3σ outlier rejection can drop
+  most bottles before fitting the slope; `cellTM_finder` drops any cast
+  whose fit landed at the search grid's edge before averaging. Both log
+  exactly what was dropped (`n_outliers_excluded`, the `edge_pinned`
+  column) - but only if you go looking. The summary row itself doesn't
+  say "this is from 3 of 10 bottles."
 
 ---
 
