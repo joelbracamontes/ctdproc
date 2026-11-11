@@ -1,30 +1,12 @@
-import logging
+﻿import logging
 
 import gsw
 import numpy as np
 import xarray as xr
 import seabirdscientific.processing as proc
-from .processing import filt_interp
+from .processing import filt_interp, check_step_lists
 
 logger = logging.getLogger(__name__)
-
-
-def _check_step_lists(step_name, **lists):
-    """Catch two config mistakes that would otherwise fail silently or with
-    a confusing low-level error: a misspelled key (step.get returns [] for
-    a key that was never actually written) and a coefficient list that's
-    shorter/longer than `variables` - both of which `zip()` on its own just
-    truncates or crashes on far downstream, without naming the real cause.
-    """
-    lengths = {name: len(lst) for name, lst in lists.items()}
-    if len(set(lengths.values())) > 1:
-        detail = ", ".join(f"{name}={n}" for name, n in lengths.items())
-        raise ValueError(
-            f"config error in '{step_name}' step: list lengths don't match "
-            f"({detail}). Check for a misspelled key or a missing/extra "
-            f"entry - every list under this step needs one entry per "
-            f"variable, in the same order."
-        )
 
 
 def _bin_average(data, **kwargs):
@@ -47,7 +29,7 @@ def apply_align(data, step, dt, bad_flag_value):
 
     variables = step.get("variables", [])
     offsets = step.get("offset", [])
-    _check_step_lists("align", variables=variables, offset=offsets)
+    check_step_lists("align", variables=variables, offset=offsets)
 
     for var, offset in zip(variables, offsets):
 
@@ -75,7 +57,7 @@ def apply_low_filter(data, step, dt):
 
     variables = step.get("variables", [])
     time_constants = step.get("time_constant", [])
-    _check_step_lists("low_filter", variables=variables, time_constant=time_constants)
+    check_step_lists("low_filter", variables=variables, time_constant=time_constants)
 
     for var, time_constant in zip(variables, time_constants):
 
@@ -107,7 +89,7 @@ def apply_wild_edit(data, step, bad_flag_value):
     std_pass_2 = step.get("std_pass_2", [])
     scans_per_block = step.get("scans_per_block", [])
     distance_to_mean = step.get("distance_to_mean", [])
-    _check_step_lists(
+    check_step_lists(
         "wild_edit",
         variables=variables,
         std_pass_1=std_pass_1,
@@ -159,7 +141,7 @@ def apply_celltm(data, step, sample_interval, bad_flag_value):
     variables = step.get("variables", [])
     amplitudes = step.get("amplitude", [])
     time_constants = step.get("time_constant", [])
-    _check_step_lists(
+    check_step_lists(
         "celltm", variables=variables, amplitude=amplitudes, time_constant=time_constants
     )
 
@@ -229,7 +211,7 @@ def apply_slope_correction(data, step, bad_flag_value=np.float64(-9.99e-29)):
     data_copy=data.copy()
     variables = step.get('variables', [])
     slopes = step.get('slope', [])
-    _check_step_lists("slope_corr", variables=variables, slope=slopes)
+    check_step_lists("slope_corr", variables=variables, slope=slopes)
 
     for var, m in zip(variables, slopes):
 
@@ -335,6 +317,7 @@ def apply_bin(data, step, bad_flag_value, base_name):
     bin_types = step.get("bin_type", [])
     bin_sizes = step.get("bin_size", [])
     profiles = step.get("type_profile", [])
+    check_step_lists("bin", bin_type=bin_types, bin_size=bin_sizes, type_profile=profiles)
 
     data["elapsed_time"] = (
         data["elapsed_time"] - data["elapsed_time"].iloc[0]

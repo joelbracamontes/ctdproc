@@ -37,8 +37,8 @@ def slopecorrection_finder(yaml_file):
         find_opt_alp_tat_fast,
         slope_for_correction,
         bottle_avg,
-        
-        
+        check_step_lists,
+
 
     )
     from .utilities import extract_head_hex, add_timestamp, bl_reader
@@ -54,11 +54,18 @@ def slopecorrection_finder(yaml_file):
     if type(config['constants']['sample_interval'])==str:
         numi,denomi=config['constants']['sample_interval'].split('/')
         sample_interval=float(numi)/float(denomi)
-    BAD_FLAG_VALUE = np.float64(-9.99e-29)    
+    BAD_FLAG_VALUE = np.float64(-9.99e-29)
     path_dir_data = '../data/'
     a_b_stations_m_values = []
-    detailed_points = [] 
+    detailed_points = []
     slope_step = config.get("slope_settings",{})
+    check_step_lists(
+        "slope_settings",
+        scan_offset=slope_step.get("scan_offset", []),
+        scan_duration=slope_step.get("scan_duration", []),
+        temperature_sensors=slope_step.get("temperature_sensors", []),
+        conductivity_sensors=slope_step.get("conductivity_sensors", []),
+    )
     data_salt_name = slope_step.get("bottle_sal_file",[])
     data_salt = pd.read_csv(data_salt_name)
     data_salt['No_bottle'] = data_salt['No_bottle'].astype(int)

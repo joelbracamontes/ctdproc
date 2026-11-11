@@ -14,6 +14,25 @@ logger = logging.getLogger(__name__)
 BAD_FLAG_VALUE = np.float64(-9.99e-29)
 
 
+def check_step_lists(step_name, **lists):
+    """Catch two config mistakes that would otherwise fail silently or with
+    a confusing low-level error: a misspelled key (step.get returns [] for
+    a key that was never actually written) and a coefficient list that's
+    shorter/longer than another list it's meant to pair with - both of
+    which `zip()` on its own just truncates or crashes on far downstream,
+    without naming the real cause.
+    """
+    lengths = {name: len(lst) for name, lst in lists.items()}
+    if len(set(lengths.values())) > 1:
+        detail = ", ".join(f"{name}={n}" for name, n in lengths.items())
+        raise ValueError(
+            f"config error in '{step_name}' step: list lengths don't match "
+            f"({detail}). Check for a misspelled key or a missing/extra "
+            f"entry - every list under this step needs the same number of "
+            f"entries, in the same order."
+        )
+
+
 def filt_interp(
     data: pd.DataFrame, param: str, tm: float, si: float, flag: bool
 ) -> np.ndarray:

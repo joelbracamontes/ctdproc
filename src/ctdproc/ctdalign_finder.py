@@ -27,6 +27,7 @@ def ctdalign_finder(yaml_file):
     from .processing import (
         filt_interp,
         crosshigh,
+        check_step_lists,
     )
     from .utilities import extract_head_hex, add_timestamp
 
@@ -36,9 +37,17 @@ def ctdalign_finder(yaml_file):
     if type(config['constants']['sample_interval'])==str:
         numi,denomi=config['constants']['sample_interval'].split('/')
         sample_interval=float(numi)/float(denomi)
-        
+
     offset_alignment_values = []
     step = config.get("alignment_settings",{})
+    check_step_lists(
+        "alignment_settings",
+        variable_lead=step.get("variable_lead", []),
+        variable_lag=step.get("variable_lag", []),
+        max_lag=step.get("max_lag", []),
+        pressure_upper=step.get("pressure_upper", []),
+        pressure_lower=step.get("pressure_lower", []),
+    )
     for j in list(range(config['constants']['ind'][0],config['constants']['ind'][1]+1)):
 
         raw_data = load_raw_data("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.hex')

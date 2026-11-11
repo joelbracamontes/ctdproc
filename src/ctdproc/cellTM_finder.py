@@ -32,6 +32,7 @@ def cellTM_finder(yaml_file):
         filt_interp,
         crosshigh,
         find_opt_alp_tat_fast,
+        check_step_lists,
 
     )
     from .utilities import extract_head_hex, add_timestamp
@@ -50,6 +51,14 @@ def cellTM_finder(yaml_file):
     BAD_FLAG_VALUE = np.float64(-9.99e-29)
     tau_alpha_values = []
     calib_step = config.get("celltm_settings",{})
+    check_step_lists(
+        "celltm_settings",
+        pressure_upper=calib_step.get("pressure_upper", []),
+        pressure_lower=calib_step.get("pressure_lower", []),
+        bin_temperature=calib_step.get("bin_temperature", []),
+        temperature_touse=calib_step.get("temperature_touse", []),
+        conductivity_touse=calib_step.get("conductivity_touse", []),
+    )
     for j in list(range(config['constants']['ind'][0],config['constants']['ind'][1]+1)):
 
         raw_data = load_raw_data("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.hex')
