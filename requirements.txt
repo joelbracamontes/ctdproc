@@ -10,6 +10,13 @@ plotly~=6.3.1
 
 PyYAML~=6.0
 
+# required by the vendored seabirdscientific 3.1.2 (src/seabirdscientific/)
+xarray>=2024.10.0
+seawater>=3.3.3
+
+# for running tests/ (not needed to run the pipeline itself)
+pytest>=8.0.0
+
 # For Jupyter
 #jupyter>=1.0.0
 #notebook~=7.4.7
