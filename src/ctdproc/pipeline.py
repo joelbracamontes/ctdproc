@@ -9,6 +9,24 @@ from .processing import filt_interp
 logger = logging.getLogger(__name__)
 
 
+def _check_step_lists(step_name, **lists):
+    """Catch two config mistakes that would otherwise fail silently or with
+    a confusing low-level error: a misspelled key (step.get returns [] for
+    a key that was never actually written) and a coefficient list that's
+    shorter/longer than `variables` - both of which `zip()` on its own just
+    truncates or crashes on far downstream, without naming the real cause.
+    """
+    lengths = {name: len(lst) for name, lst in lists.items()}
+    if len(set(lengths.values())) > 1:
+        detail = ", ".join(f"{name}={n}" for name, n in lengths.items())
+        raise ValueError(
+            f"config error in '{step_name}' step: list lengths don't match "
+            f"({detail}). Check for a misspelled key or a missing/extra "
+            f"entry - every list under this step needs one entry per "
+            f"variable, in the same order."
+        )
+
+
 def _bin_average(data, **kwargs):
     """Thin pd.DataFrame <-> xr.Dataset adapter around seabirdscientific
     3.1.2's bin_average, which now takes/returns an xr.Dataset (was
@@ -27,10 +45,11 @@ def apply_align(data, step, dt, bad_flag_value):
 
     text = []
 
-    for var, offset in zip(
-        step.get("variables", []),
-        step.get("offset", [])
-    ):
+    variables = step.get("variables", [])
+    offsets = step.get("offset", [])
+    _check_step_lists("align", variables=variables, offset=offsets)
+
+    for var, offset in zip(variables, offsets):
 
         data[var] = proc.align_ctd(
             x=data[var],
@@ -54,10 +73,11 @@ def apply_low_filter(data, step, dt):
 
     text = []
 
-    for var, time_constant in zip(
-        step.get("variables", []),
-        step.get("time_constant", [])
-    ):
+    variables = step.get("variables", [])
+    time_constants = step.get("time_constant", [])
+    _check_step_lists("low_filter", variables=variables, time_constant=time_constants)
+
+    for var, time_constant in zip(variables, time_constants):
 
         data[var] = filt_interp(
             data,
@@ -82,12 +102,22 @@ def apply_wild_edit(data, step, bad_flag_value):
 
     text = []
 
+    variables = step.get("variables", [])
+    std_pass_1 = step.get("std_pass_1", [])
+    std_pass_2 = step.get("std_pass_2", [])
+    scans_per_block = step.get("scans_per_block", [])
+    distance_to_mean = step.get("distance_to_mean", [])
+    _check_step_lists(
+        "wild_edit",
+        variables=variables,
+        std_pass_1=std_pass_1,
+        std_pass_2=std_pass_2,
+        scans_per_block=scans_per_block,
+        distance_to_mean=distance_to_mean,
+    )
+
     for var, std1, std2, scans, distance in zip(
-        step.get("variables", []),
-        step.get("std_pass_1", []),
-        step.get("std_pass_2", []),
-        step.get("scans_per_block", []),
-        step.get("distance_to_mean", []),
+        variables, std_pass_1, std_pass_2, scans_per_block, distance_to_mean
     ):
 
         data[var] = proc.wild_edit(
@@ -126,11 +156,14 @@ def apply_celltm(data, step, sample_interval, bad_flag_value):
 
     text = []
 
-    for var, amplitude, time_constant in zip(
-        step.get("variables", []),
-        step.get("amplitude", []),
-        step.get("time_constant", []),
-    ):
+    variables = step.get("variables", [])
+    amplitudes = step.get("amplitude", [])
+    time_constants = step.get("time_constant", [])
+    _check_step_lists(
+        "celltm", variables=variables, amplitude=amplitudes, time_constant=time_constants
+    )
+
+    for var, amplitude, time_constant in zip(variables, amplitudes, time_constants):
 
         if var == "conductivity":
             temp_var = "temperature"
@@ -194,10 +227,11 @@ def apply_slope_correction(data, step, bad_flag_value=np.float64(-9.99e-29)):
     """
     text = []
     data_copy=data.copy()
-    for var, m in zip(
-        step.get('variables',[]),
-        step.get('slope'),
-    ):
+    variables = step.get('variables', [])
+    slopes = step.get('slope', [])
+    _check_step_lists("slope_corr", variables=variables, slope=slopes)
+
+    for var, m in zip(variables, slopes):
 
         if var == "conductivity":
             temp_var = "temperature"
