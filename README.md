@@ -38,6 +38,42 @@ Then `pytest tests/` to check it works.
 
 ---
 
+## Quick start
+
+1. Raw `.hex` + `.XMLCON` pairs go in `data/`, same base filename (e.g.
+   `MIXSED2_001.hex` + `MIXSED2_001.XMLCON`).
+2. Minimal `proc/config.yaml` - decode and convert one cast, no
+   corrections yet:
+
+```yaml
+constants:
+  sample_interval: 1/24
+  name: "MIXSED2"
+  ind: [1, 1]          # just cast 001, to start
+  convert: 'yes'
+  time_ref: 'System UTC'
+
+features: []           # add real correction steps once you have fitted
+                        # coefficients - see Diagnostic finders below
+```
+
+3. Run it:
+```bash
+cd proc
+python -m ctdproc config.yaml
+```
+
+4. Check `proc/MIXSED2_001_24hz.cnv` - a real Sea-Bird-style header
+   followed by pressure/temperature/temperature2/conductivity/
+   conductivity2 at 24 Hz. No `sal00`/`sal11` yet at this point - salinity
+   columns only get added once a `celltm` or `slope_corr` step has
+   actually run.
+
+From here, add one correction step at a time - each needs real
+coefficients fit by one of the three finders below, not guessed numbers.
+
+---
+
 ## Running the pipeline
 
 ```text
@@ -116,6 +152,10 @@ against `tests/fixtures/reference/`. Only regenerate those with
   changes were found and fixed along the way (return-type changes,
   a removed `scalar` param, a coefficient casing change, `loop_edit`'s
   return semantics), confirmed via the regression suite.
+- Outlier rejection (`slopecorrection_finder`) and edge-pinning exclusion
+  (`cellTM_finder`) are automatic but silent unless you read the console
+  output or CSV columns - a campaign average can be computed from a
+  minority of casts/bottles with no flag on the summary row itself.
 
 ---
 
@@ -132,11 +172,3 @@ against `tests/fixtures/reference/`. Only regenerate those with
   `variables:`/coefficient-list pairing in `features:` will generally fail
   with a raw Python traceback (e.g. an `IndexError` from `zip`-ing
   mismatched-length lists) rather than a clear error message.
-- **`data/` contains real, unrepeatable cruise data.** Nothing in this
-  repo regenerates it — treat it as read-only input, not a working file to
-  edit or an output path to point tools at by accident.
-- **Outlier rejection and edge-pinning exclusions are automatic but
-  silent unless you read the console output / CSV columns.** A finder
-  script will happily report a campaign average computed from, say, 3 out
-  of 10 casts if the other 7 were excluded — the exclusion counts are in
-  the output, but nothing stops you from only looking at the averages row.
