@@ -20,12 +20,7 @@ features:
     time_constant: [7.190,3.714]
 slope_settings:
   bottle_sal_file: "Bottle_Salinity.csv" #
-  # scan_offset/scan_duration: GO-SHIP standard (Swift, "Reference-Quality Water
-  # Sample Data", go-ship.org/Manual/Swift_DataEval.pdf, p.8-9) recommends a
-  # 2-second average ending AT bottle closure (i.e. starting 2s before) - NOT a
-  # window extending past closure. offset=2, duration=2 implements exactly that:
-  # init_scan = start_scan - 2*24, final_scan = init_scan + 2*24 = start_scan.
-  # Was previously [2,2]/[5,5], which extended 3s PAST closure - changed 2026-09-29.
+  # 2,2: GO-SHIP standard - 2s average ending AT bottle closure, not past it.
   scan_offset: [2,2]
   scan_duration: [2,2]
   temperature_sensors: ["temperature", "temperature2"]
