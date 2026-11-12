@@ -1,10 +1,9 @@
-# ctdproc-MIXSED2
+# ctdproc
 
 Processes shipboard Sea-Bird SBE 911plus CTD data: raw `.hex`/`.XMLCON` in,
-calibration-corrected `.cnv` out. Named after MIXSED2, the cruise this was
-most recently run against - `load.py` reads any cruise's `.hex`/`.XMLCON`
-pair generically, the `name:`/`ind:` config values just pick which one.
-Feeds its output into [`caldip-MIXSED2`](../caldip-MIXSED2) for
+calibration-corrected `.cnv` out. `load.py` reads any cruise's
+`.hex`/`.XMLCON` pair generically - the `name:`/`ind:` config values pick
+which one. Feeds its output into [`caldip-MIXSED2`](../caldip-MIXSED2) for
 calibration-dip statistics.
 
 ---
