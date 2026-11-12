@@ -56,9 +56,9 @@ def density(
         "Deprecated. Use use the sewater library (seawater.dens) instead", DeprecationWarning
     )
 
-    # Deprecated shim for the old EOS-80 density() (ported from
-    # CSharedCalc::Density()), which returned full density, not sigma.
-    return np.atleast_1d(sw.dens(s0, t, p0))
+    # seawater.dens returns full density; subtract 1000 to keep the sigma
+    # convention used by SBE Data Processing (and the SeaSoft reference).
+    return np.atleast_1d(sw.dens(s0, t, p0)) - 1000.0
 
 
 def potential_temperature(
