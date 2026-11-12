@@ -79,6 +79,12 @@ def CTD_process(yaml_file):
             "config has both 'ind' and 'sind' set - use only one"
         )
 
+    if 'convert' not in config['constants']:
+        raise ValueError(
+            "config is missing 'constants.convert' (e.g. convert: 'yes') - "
+            "controls whether a .cnv file is written for each cast"
+        )
+
     if config['constants'].get('sind'):
         j_list = config['constants']['sind']
     else:
@@ -162,14 +168,15 @@ def CTD_process(yaml_file):
         if config['constants']['convert'] == 'yes':
             nominal_name = str(output_dir / (base + "_24hz.cnv"))
         
-            if config and config.get('constants', {}).get('time_ref') is not None:
-                
-                ref_time = config['constants']['time_ref']
-        
+            ref_time = config.get('constants', {}).get('time_ref')
+
+            if ref_time is not None:
+
                 scans = np.arange(data.shape[0])
-        
+
                 data['timeJ'] = add_timestamp(ref_time,head,scans)
-        
+
+
             data['elapsed_time'] = (data['elapsed_time'] - data['elapsed_time'].iloc[0])
         
             data = data.drop(columns=['flag'])
@@ -195,10 +202,11 @@ def CTD_process(yaml_file):
             sbe_cols = [c for c in sbe_names if c[0] in data.columns]
 
             start_time = None
-            for line in head:
-                if ref_time in line:
-                    start_time = line.split('=')[1].strip()
-                    break
+            if ref_time is not None:
+                for line in head:
+                    if ref_time in line:
+                        start_time = line.split('=')[1].strip()
+                        break
 
             sbe_header = []
             sbe_header.append(f"# nvalues = {data.shape[0]}\n")
