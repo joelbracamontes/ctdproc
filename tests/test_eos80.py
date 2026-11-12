@@ -72,10 +72,11 @@ def test_density_returns_array_same_shape():
 
 
 def test_density_physically_plausible_range():
-    """Seawater density should be 1020–1035 kg/m³ in typical conditions."""
+    """density() returns sigma (full density - 1000), per SBE Data Processing's
+    own convention - seawater sigma should be 20-35 kg/m3 in typical conditions."""
     rho = eos80.density(SAL_WIN, TEMP_WIN, PRES_WIN)
-    assert np.all(rho > 1020), "density below plausible range"
-    assert np.all(rho < 1060), "density above plausible range"
+    assert np.all(rho > 20), "density below plausible range"
+    assert np.all(rho < 60), "density above plausible range"
 
 
 def test_density_increases_with_pressure():

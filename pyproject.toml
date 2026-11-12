@@ -29,6 +29,19 @@ dependencies = [
     "scipy~=1.13.1",
     "plotly~=6.3.1",
     "PyYAML~=6.0",
+    # required by the vendored seabirdscientific 3.1.2 (src/seabirdscientific/) -
+    # not needed by the old 2.7.8 fork this replaced. read_hex_file returns an
+    # xr.Dataset now, so this is a real pipeline dependency, not just tests.
+    "xarray>=2024.10.0",
+]
+
+[project.optional-dependencies]
+# only needed to run tests/test_eos80.py, which exercises eos80_processing.py/
+# eos80_conversion.py - deprecated legacy shims in the vendored seabirdscientific
+# that ctdproc's own pipeline never imports or calls.
+test = [
+    "seawater>=3.3.3",
+    "pytest>=8.0.0",
 ]
 
 [tool.setuptools.packages.find]

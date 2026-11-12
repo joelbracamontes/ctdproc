@@ -1,11 +1,28 @@
 constants:
   sample_interval: 1/24
   name: "MIXSED2"
-
+features:
+  - name: "align"
+    variables: ["conductivity","conductivity2"]
+    offset: [0.000,0.04166]  # 
+  - name: "wild_edit"
+    variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
+    std_pass_1: [2.0,2.0,2.0,2.0,2.0]
+    std_pass_2: [20.0,20.0,20.0,20.0,20.0]
+    scans_per_block: [100,100,100,100,100]
+    distance_to_mean: [0.0,0.0,0.0,0.0,0.0]
+  - name: "low_filter"
+    variables:  ["pressure"]
+    time_constant: [0.15]
+  - name: "celltm"
+    variables: ["conductivity","conductivity2"]
+    amplitude: [0.0385,0.020]
+    time_constant: [7.190,3.714]
 slope_settings:
   bottle_sal_file: "Bottle_Salinity.csv" #
+  # 2,2: GO-SHIP standard - 2s average ending AT bottle closure, not past it.
   scan_offset: [2,2]
-  scan_duration: [5,5]
+  scan_duration: [2,2]
   temperature_sensors: ["temperature", "temperature2"]
   conductivity_sensors: ["conductivity", "conductivity2"]
 

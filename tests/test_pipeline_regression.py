@@ -128,7 +128,7 @@ def stage_low_filter(stage_wild_edit):
 @pytest.fixture(scope="module")
 def stage_celltm(stage_low_filter):
     data = stage_low_filter.copy()
-    data, _ = apply_celltm(data, STEPS["celltm"], SAMPLE_DT)
+    data, _ = apply_celltm(data, STEPS["celltm"], SAMPLE_DT, BAD_FLAG)
     return data
 
 
@@ -187,23 +187,37 @@ def test_bin_pressure(stage_loop_edit):
 # ---------------------------------------------------------------------------
 
 
-def _data_lines(cnv_path: Path) -> str:
-    """Return the data-only portion of a .cnv file (skip * header lines)."""
-    lines = cnv_path.read_text(encoding="utf-8").splitlines(keepends=True)
-    data_lines = [l for l in lines if not l.startswith("*")]
-    return "".join(data_lines)
-
-
 def _load_cnv_data(cnv_path: Path) -> pd.DataFrame:
-    return pd.read_csv(StringIO(_data_lines(cnv_path)))
+    """Parse a .cnv file written by main.py - either the SBE-style full
+    resolution output ('# name N = LABEL: ...' header, data after '*END*',
+    whitespace-separated) or the plain CSV the bin branch still writes
+    (comma-separated with its own pandas header row, '*'-prefixed metadata)."""
+    lines = cnv_path.read_text(encoding="utf-8").splitlines()
+
+    sbe_columns = []
+    data_start = None
+    for i, line in enumerate(lines):
+        if line.startswith("# name"):
+            label = line.split("=", 1)[1].strip().split(":", 1)[0].strip()
+            sbe_columns.append(label)
+        elif line.startswith("*END*"):
+            data_start = i + 1
+            break
+
+    if data_start is not None:
+        data_text = "\n".join(lines[data_start:])
+        return pd.read_csv(StringIO(data_text), sep=r"\s+", header=None, names=sbe_columns)
+
+    data_lines = [l for l in lines if not l.startswith("*")]
+    return pd.read_csv(StringIO("\n".join(data_lines)))
 
 
 def test_full_pipeline_cnv_outputs(tmp_path):
     from ctdproc.main import CTD_process
 
     cfg_template = (FIXTURES / "config.yaml").read_text()
-    cfg_text = cfg_template.replace("__RAW_DIR__", str(RAW_DIR.resolve()))
-    cfg_text = cfg_text.replace("__OUT_DIR__", str(tmp_path.resolve()))
+    cfg_text = cfg_template.replace("__RAW_DIR__", RAW_DIR.resolve().as_posix())
+    cfg_text = cfg_text.replace("__OUT_DIR__", tmp_path.resolve().as_posix())
 
     tmp_cfg = tmp_path / "config.yaml"
     tmp_cfg.write_text(cfg_text)

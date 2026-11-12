@@ -28,7 +28,14 @@ def extract_head_hex(
     return for_heading
 
 
-def add_timestamp(ref_time,header,scans):
+def add_timestamp(ref_time, header, scans):
+    """Convert a scan index into a Julian day-of-year timestamp.
+
+    Finds the header line naming `ref_time` (e.g. "NMEA UTC (Time)") to get the
+    cast's start date, then adds `scans / 24.0` seconds - i.e. assumes a fixed
+    24 Hz sample rate - to get each scan's absolute time, returned as day-of-
+    year with Jan 1 00:00 = 1.0.
+    """
     for linea in header:
         if ref_time in linea:
             string_date = linea.split('=')[1].strip()
@@ -40,6 +47,11 @@ def add_timestamp(ref_time,header,scans):
 
 
 def bl_reader(bl_file):
+    """Read an SBE .bl (bottle log) file into a DataFrame.
+
+    Skips '*' comment lines and the first header row, naming the five fixed
+    columns an SBE .bl file always has.
+    """
     df_bl= pd.read_csv(
         bl_file,
         sep = ',',

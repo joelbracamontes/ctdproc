@@ -1,13 +1,13 @@
 constants:
   name: "MIXSED2"
-  ind: [28, 48]               #choose e.g., 10 profiles 
+  ind: [20, 40]               #choose e.g., 10 profiles 
   sample_interval: 1/24
 
 
 features:
   - name: "align"
     variables: ["conductivity","conductivity2"]
-    offset: [0.000,0.000]  # 
+    offset: [0.000,0.04166]  # 
   - name: "wild_edit"
     variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
     std_pass_1: [2.0,2.0,2.0,2.0,2.0]
@@ -16,9 +16,7 @@ features:
     distance_to_mean: [0.0,0.0,0.0,0.0,0.0]
   - name: "low_filter"
     variables:  ["pressure"]
-    time_constant: [0.03]
-
-
+    time_constant: [0.15]
 celltm_settings:
   temperature_touse: ["temperature","temperature2"]    # 
   conductivity_touse: ["conductivity","conductivity2"]    # 

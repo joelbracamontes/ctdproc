@@ -71,7 +71,7 @@ if __name__ == "__main__":
     save(data, "stage_03_low_filter")
 
     print("celltm ...")
-    data, _ = apply_celltm(data, steps["celltm"], SAMPLE_DT)
+    data, _ = apply_celltm(data, steps["celltm"], SAMPLE_DT, BAD_FLAG)
     save(data, "stage_04_celltm")
 
     print("loop_edit ...")
@@ -87,8 +87,8 @@ if __name__ == "__main__":
 
     print("Generating .cnv reference files via full pipeline ...")
     cfg_text = (FIXTURES_DIR / "config.yaml").read_text()
-    cfg_text = cfg_text.replace("__RAW_DIR__", str(RAW_DIR.resolve()))
-    cfg_text = cfg_text.replace("__OUT_DIR__", str(REF_DIR.resolve()))
+    cfg_text = cfg_text.replace("__RAW_DIR__", RAW_DIR.resolve().as_posix())
+    cfg_text = cfg_text.replace("__OUT_DIR__", REF_DIR.resolve().as_posix())
     tmp_cfg = REF_DIR / "_tmp_config.yaml"
     tmp_cfg.write_text(cfg_text)
     try:

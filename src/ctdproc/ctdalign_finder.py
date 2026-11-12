@@ -1,5 +1,9 @@
 def ctdalign_finder(yaml_file):
-
+    """Measure the time lag between a lead/lag variable pair (e.g. pressure
+    vs. conductivity) across a range of casts, using crosshigh's cross-
+    correlation, and write per-cast + campaign-average lag offsets ready to
+    paste into an `align` step's `offset:` list.
+    """
 
     import yaml
     import warnings
@@ -13,9 +17,7 @@ def ctdalign_finder(yaml_file):
     import datetime as datetime
     import numpy as np
     import pandas as pd
-#    import gsw
 
-# # Import modified Sea-Bird 
     import seabirdscientific.conversion as conv
     import seabirdscientific.instrument_data as id_sbs
     import seabirdscientific.processing as proc
@@ -25,6 +27,7 @@ def ctdalign_finder(yaml_file):
     from .processing import (
         filt_interp,
         crosshigh,
+        check_step_lists,
     )
     from .utilities import extract_head_hex, add_timestamp
 
@@ -34,15 +37,21 @@ def ctdalign_finder(yaml_file):
     if type(config['constants']['sample_interval'])==str:
         numi,denomi=config['constants']['sample_interval'].split('/')
         sample_interval=float(numi)/float(denomi)
-        
+
     offset_alignment_values = []
     step = config.get("alignment_settings",{})
-    #Here a loop is needed
-    #lower example to track ['pressure','temperature','conductivity'] --> conductivity will lag temperature
+    check_step_lists(
+        "alignment_settings",
+        variable_lead=step.get("variable_lead", []),
+        variable_lag=step.get("variable_lag", []),
+        max_lag=step.get("max_lag", []),
+        pressure_upper=step.get("pressure_upper", []),
+        pressure_lower=step.get("pressure_lower", []),
+    )
     for j in list(range(config['constants']['ind'][0],config['constants']['ind'][1]+1)):
 
         raw_data = load_raw_data("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.hex')
-        data = convert_data(raw_data,"../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.xmlcon',sample_interval)
+        data = convert_data(raw_data,"../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.xmlcon',sample_interval,convert_optional=False)
 
         for var_lead, var_lag, max_lag, pre_up,pre_lo in zip(
 
@@ -55,10 +64,17 @@ def ctdalign_finder(yaml_file):
             print(var_lead,var_lag,max_lag,pre_up,pre_lo)
 
             func_name = step.get('name')
-            _,lg_dn,_,lg_up=crosshigh(data,['pressure',var_lead,var_lag],
+            _,lag_up,_,lag_dn=crosshigh(data,['pressure',var_lead,var_lag],
                                       max_lag,pre_up,pre_lo,sample_interval,True)
 
-                #allocate lg_up,lg_dn
+            # crosshigh's raw sign is backwards for align_ctd's offset convention:
+            # crosshigh returns negative when var_lag is physically behind var_lead
+            # (the real conductivity-cell-lag case), but align_ctd's offset needs a
+            # positive value to pull a lagging series forward into alignment. Negate
+            # here so alignment_report.csv's values can be pasted directly into a
+            # config's `offset:` list.
+            lg_dn = -lag_dn
+            lg_up = -lag_up
 
             offset_alignment_values.append({
              'cast_no': j,
@@ -74,7 +90,7 @@ def ctdalign_finder(yaml_file):
 
 
     df_means = df_lags.groupby(['variable_lead', 'variable_lag'])[['lag_down_cast', 'lag_up_cast']].mean().reset_index()
-    df_means['cast_no'] = 'AVERAGE'  # Etiqueta clara para identificar el promedio
+    df_means['cast_no'] = 'AVERAGE'
 
     df_means = df_means[['cast_no', 'variable_lead', 'variable_lag', 'lag_down_cast', 'lag_up_cast']]
 

@@ -7,19 +7,39 @@ import pandas as pd
 from scipy.signal import butter, filtfilt
 import gsw
 
-# Import modified seabirdscientific
 from seabirdscientific import processing as proc
 
 logger = logging.getLogger(__name__)
 
-# BAD_FLAG
 BAD_FLAG_VALUE = np.float64(-9.99e-29)
+
+
+def check_step_lists(step_name, **lists):
+    """Catch two config mistakes that would otherwise fail silently or with
+    a confusing low-level error: a misspelled key (step.get returns [] for
+    a key that was never actually written) and a coefficient list that's
+    shorter/longer than another list it's meant to pair with - both of
+    which `zip()` on its own just truncates or crashes on far downstream,
+    without naming the real cause.
+    """
+    lengths = {name: len(lst) for name, lst in lists.items()}
+    if len(set(lengths.values())) > 1:
+        detail = ", ".join(f"{name}={n}" for name, n in lengths.items())
+        raise ValueError(
+            f"config error in '{step_name}' step: list lengths don't match "
+            f"({detail}). Check for a misspelled key or a missing/extra "
+            f"entry - every list under this step needs the same number of "
+            f"entries, in the same order."
+        )
 
 
 def filt_interp(
     data: pd.DataFrame, param: str, tm: float, si: float, flag: bool
 ) -> np.ndarray:
-    """Filter with low pass and linear interpolate if bad flags
+    """Low-pass filter `param` (time_constant=tm, sample_interval=si), after
+    masking bad_flag_value scans to NaN and linearly interpolating across
+    them. If `flag` is True, restores bad_flag_value at those positions in
+    the output; otherwise the filtered/interpolated value is kept.
     """
     data_i = data[param].copy()
     indx = data_i == BAD_FLAG_VALUE
@@ -46,7 +66,17 @@ def crosshigh(
     si: float,
     high: bool,
 ) -> list:
-    """Compute correlation of high frequency values for up- down profiles
+    """Cross-correlate two variables (param[1], param[2]) against each other,
+    separately for the down- and up-cast (split at param[0]'s, i.e.
+    pressure's, peak), restricted to the [pi, pf] range of param[0].
+
+    If `high` is True, both variables are high-pass filtered first (a
+    Butterworth low-pass subtracted off), isolating high-frequency lag
+    rather than any smooth overall trend.
+
+    Returns [up_corr, up_lag_seconds, down_corr, down_lag_seconds] - the
+    peak correlation and its lag (in seconds, via sample_interval=si) for
+    each direction.
     """
     data_i = data.copy()
     indx1 = data_i[param[1]] == BAD_FLAG_VALUE
@@ -102,8 +132,12 @@ def alp_tau_fast(
     p_up, t_up, c_up, 
     temp_bins
 ) -> float:
-    """ For a given alpha and Ta compute the average absolute error of salinity between up- down- profile"""
-    
+    """Score one (alpha, tau) cell-thermal-mass correction: bin down- and
+    up-cast salinity by temperature, then return the mean absolute
+    difference between the two profiles' binned salinity. Used by
+    find_opt_alp_tat_fast as the error to minimize over the alpha/tau grid.
+    """
+
 
     sal_dn = gsw.SP_from_C(10 * c_dn, t=t_dn, p=p_dn)
     sal_up = gsw.SP_from_C(10 * c_up, t=t_up, p=p_up)
@@ -146,8 +180,13 @@ def find_opt_alp_tat_fast(
     tbin: float,
     sample_interval: float,
 ) -> np.ndarray:
-    """Try to find the best alpha and Tau values."""
-
+    """Grid-search cell_thermal_mass's (alpha, tau) over `alpha_r` x `tau_r`:
+    for each combination, correct down/up-cast conductivity and score it via
+    alp_tau_fast. Returns the full error matrix (shape len(alpha_r) x
+    len(tau_r)) - callers pick the best combination themselves (e.g. via
+    np.nanargmin), which also lets them detect a result pinned at the grid's
+    edge (optimum likely outside the searched range).
+    """
 
     data_i = data.copy()
 
@@ -181,7 +220,6 @@ def find_opt_alp_tat_fast(
     temp_bins = np.arange(max_min, min_max + tbin, tbin)
 
 
-   # error_matrix = np.zeros((len(alpha_r), len(tau_r)))
     error_matrix = np.full((len(alpha_r), len(tau_r)),np.nan)
 
 
@@ -211,7 +249,11 @@ def find_opt_alp_tat_fast(
 def alp_tau(
         data: pd.DataFrame, param: list, pi: float, pf: float, tbin: float, figure: bool = False
 ) -> float:
-    """ For a given alpha and Ta compute the average absolute error of salinity between up- down- profile
+    """Pandas-groupby-based equivalent of alp_tau_fast (bins down/up-cast
+    salinity by temperature and returns the mean absolute difference), kept
+    as the slower reference implementation for cross-checking the
+    vectorized version, and because it can optionally plot the two profiles
+    (figure=True) for visual inspection, which alp_tau_fast doesn't support.
     """
     data_i = data.copy()
     indx1 = data_i[param[1]] == BAD_FLAG_VALUE
@@ -284,7 +326,12 @@ def find_opt_alp_tat(
     tbin: float,
     figure: bool,
 ) -> np.ndarray:
-    """Try to find the best alpha and Tau values.
+    """Grid-search cell_thermal_mass's (alpha, tau) over `alpha_r` x `tau_r`
+    via the slower, pandas-based alp_tau scorer (see find_opt_alp_tat_fast
+    for the vectorized equivalent). Returns the full error matrix.
+
+    Note: sample_interval is hardcoded to 24 Hz here rather than taken from
+    an argument - only correct if the data being scored is actually 24 Hz.
     """
     data_i = data.copy()
     max_value = np.zeros((len(alpha_r), len(tau_r)))
@@ -296,7 +343,7 @@ def find_opt_alp_tat(
                 conductivity_Sm=data_i[param[2]],
                 amplitude=i,  # alpha
                 time_constant=j,  # 1/beta (tau)
-                sample_interval=1 / 24,  # Modified 
+                sample_interval=1 / 24,
             )
             max_value[r, c] = alp_tau(
                 data_i, [param[0], param[1], param[3]], pi, pf, tbin, figure=False
@@ -305,7 +352,17 @@ def find_opt_alp_tat(
 
 
 def bottle_avg(data_ctd,data_bl,scan_offset,scan_duration,samp_int):
-    scanpsecond=samp_int;
+    """Average each bottle-stop's CTD channels over a scan window.
+
+    For every row in the .bl file (bottle log), averages conductivity/
+    temperature/pressure/lat/lon over the scan range
+    [start_scan - scan_offset*scans_per_second, + scan_duration*scans_per_second],
+    i.e. offset/duration are given in seconds, converted here to scans.
+    Returns one row per bottle, indexed by the .bl file's own recorded
+    bottle POSITION (real Niskin number) rather than firing order - these
+    differ whenever bottles are fired out of numeric sequence.
+    """
+    scanpsecond=1/samp_int
     data_vec=np.zeros((len(data_bl['start_scan']),8))
     columnas = [
         'bottle', 
@@ -318,6 +375,7 @@ def bottle_avg(data_ctd,data_bl,scan_offset,scan_duration,samp_int):
         'pressure'
     ]
     
+    bottle_positions = data_bl['position'].values
     for j,k in enumerate(data_bl['start_scan']):
         init_scan=k-scanpsecond*scan_offset
         finl_scan=init_scan+scanpsecond*scan_duration
@@ -329,15 +387,18 @@ def bottle_avg(data_ctd,data_bl,scan_offset,scan_duration,samp_int):
         lat_blst=data_ctd['latitude'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
         lon_blst=data_ctd['longitude'][ (data_ctd['scan']<=finl_scan) & (data_ctd['scan']>=init_scan)].mean()
 
-        
- 
-        
-        data_vec[j,:]=[j+1,cond_blst,cond_blst2,temp_blst,temp_blst2,lat_blst,lon_blst,pres_blst]
+        data_vec[j,:]=[bottle_positions[j],cond_blst,cond_blst2,temp_blst,temp_blst2,lat_blst,lon_blst,pres_blst]
         df_bottles = pd.DataFrame(data_vec, columns=columnas)
 
     return df_bottles  
 
-def slope_for_correction(a,b):
+def slope_for_correction(a, b):
+    """Least-squares gain fitting b ~= m*a, forced through the origin.
+
+    Returns m = sum(a*b)/sum(a*a), the slope minimizing sum((b - m*a)**2).
+    NaN-masks a/b internally, so callers can pass values with outliers
+    already set to NaN without pre-filtering.
+    """
     mask_nan = ~np.isnan(a) & ~np.isnan(b)
     aaS = np.sum(a[mask_nan]*a[mask_nan])
     abS = np.sum(a[mask_nan]*b[mask_nan])

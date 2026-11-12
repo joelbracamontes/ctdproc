@@ -10,6 +10,15 @@ plotly~=6.3.1
 
 PyYAML~=6.0
 
+# required by the vendored seabirdscientific 3.1.2 (src/seabirdscientific/) -
+# read_hex_file returns an xr.Dataset now, so this is a real pipeline dependency
+xarray>=2024.10.0
+
+# only for running tests/test_eos80.py (deprecated legacy shims ctdproc's own
+# pipeline never calls) - not needed to run the pipeline itself
+seawater>=3.3.3
+pytest>=8.0.0
+
 # For Jupyter
 #jupyter>=1.0.0
 #notebook~=7.4.7
