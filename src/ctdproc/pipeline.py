@@ -482,7 +482,6 @@ def apply_bin(data, step, bad_flag_value, base_name):
             )
 
 
-        # remove flag for output
         if "flag" in bin_data.columns:
             bin_data = bin_data.drop(columns=["flag"])
 

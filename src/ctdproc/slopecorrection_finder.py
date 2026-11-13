@@ -85,7 +85,6 @@ def slopecorrection_finder(yaml_file):
         
         print(data_salt,temp,cond,offset,duration)
         a=np.zeros(data_salt.shape[0]) #Create vector for a and b
-            #b=np.zeros(data_salt.shape[0])
 
         processed_stations = {}
     

@@ -1,5 +1,3 @@
-# src/processing.py
-
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -235,7 +233,7 @@ def find_opt_alp_tat_fast(
     alpha_r: np.ndarray,
     tau_r: np.ndarray,
     data: pd.DataFrame,
-    param: list,  # [pressure, temperature, conductivity]
+    param: list,
     pi: float,
     pf: float,
     tbin: float,

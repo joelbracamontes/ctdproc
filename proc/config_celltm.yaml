@@ -7,7 +7,7 @@ constants:
 features:
   - name: "align"
     variables: ["conductivity","conductivity2"]
-    offset: [0.000,0.04166]  # 
+    offset: [0.000,0.04166]
   - name: "wild_edit"
     variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
     std_pass_1: [2.0,2.0,2.0,2.0,2.0]
@@ -18,8 +18,8 @@ features:
     variables:  ["pressure"]
     time_constant: [0.15]
 celltm_settings:
-  temperature_touse: ["temperature","temperature2"]    # 
-  conductivity_touse: ["conductivity","conductivity2"]    # 
+  temperature_touse: ["temperature","temperature2"]
+  conductivity_touse: ["conductivity","conductivity2"]
   bin_temperature: [0.01,0.01]   #in °C degrees
   pressure_upper: [50.0,50.0]      # You have to choose a range of depth with different values of temperature 
   pressure_lower: [200.0,200.0]    # For example, you can choose the thermocline

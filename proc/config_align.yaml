@@ -4,8 +4,8 @@ constants:
   sample_interval: 1/24
 
 alignment_settings:
-  variable_lead: ["temperature","temperature2"]    # 
-  variable_lag: ["conductivity","conductivity2"]    # 
+  variable_lead: ["temperature","temperature2"]
+  variable_lag: ["conductivity","conductivity2"]
   max_lag: [240,240]   #N*dt 240 is 10 seconds
-  pressure_upper: [20.0,20.0]            # 
-  pressure_lower: [400.0,400.0]           # 
+  pressure_upper: [20.0,20.0]
+  pressure_lower: [400.0,400.0]

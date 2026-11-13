@@ -4,7 +4,7 @@ constants:
 features:
   - name: "align"
     variables: ["conductivity","conductivity2"]
-    offset: [0.000,0.04166]  # 
+    offset: [0.000,0.04166]
   - name: "wild_edit"
     variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
     std_pass_1: [2.0,2.0,2.0,2.0,2.0]
@@ -19,7 +19,7 @@ features:
     amplitude: [0.0385,0.020]
     time_constant: [7.190,3.714]
 slope_settings:
-  bottle_sal_file: "Bottle_Salinity.csv" #
+  bottle_sal_file: "Bottle_Salinity.csv"
   # 2,2: GO-SHIP standard - 2s average ending AT bottle closure, not past it.
   scan_offset: [2,2]
   scan_duration: [2,2]
