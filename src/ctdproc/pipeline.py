@@ -345,7 +345,11 @@ def apply_bin(data, step, bad_flag_value, base_name):
 
         else:
             raise ValueError(
-                f"Unknown cast type: {profile}"
+                f"config error in 'bin' step: unknown type_profile '{profile}'. "
+                f"Valid options are:\n"
+                f"  - BOTH: bin the full cast, up- and downcast together\n"
+                f"  - UP: bin only the upcast\n"
+                f"  - DOWN: bin only the downcast"
             )
 
 
@@ -405,7 +409,11 @@ def apply_bin(data, step, bad_flag_value, base_name):
 
         else:
             raise ValueError(
-                f"Unknown bin type: {bin_type}"
+                f"config error in 'bin' step: unknown bin_type '{bin_type}'. "
+                f"Valid options are:\n"
+                f"  - elapsed_time: bin by seconds elapsed since cast start\n"
+                f"  - scans: bin by raw scan count\n"
+                f"  - pressure: bin by pressure (dbar)"
             )
 
 

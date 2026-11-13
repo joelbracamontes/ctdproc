@@ -38,6 +38,7 @@ def slopecorrection_finder(yaml_file):
         slope_for_correction,
         bottle_avg,
         check_step_lists,
+        validate_features,
 
 
     )
@@ -66,6 +67,7 @@ def slopecorrection_finder(yaml_file):
         temperature_sensors=slope_step.get("temperature_sensors", []),
         conductivity_sensors=slope_step.get("conductivity_sensors", []),
     )
+    validate_features(config.get('features'), ['align', 'low_filter', 'wild_edit', 'celltm'])
     data_salt_name = slope_step.get("bottle_sal_file",[])
     data_salt = pd.read_csv(data_salt_name)
     data_salt['No_bottle'] = data_salt['No_bottle'].astype(int)

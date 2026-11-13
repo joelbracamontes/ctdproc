@@ -32,6 +32,7 @@ def CTD_process(yaml_file):
         crosshigh,
         alp_tau,
         find_opt_alp_tat,
+        validate_features,
     )
     from .utilities import extract_head_hex, add_timestamp
     from .pipeline import (
@@ -84,6 +85,11 @@ def CTD_process(yaml_file):
             "config is missing 'constants.convert' (e.g. convert: 'yes') - "
             "controls whether a .cnv file is written for each cast"
         )
+
+    validate_features(
+        config.get('features'),
+        ['align', 'low_filter', 'wild_edit', 'celltm', 'slope_corr', 'loop_edit', 'bin'],
+    )
 
     if config['constants'].get('sind'):
         j_list = config['constants']['sind']
