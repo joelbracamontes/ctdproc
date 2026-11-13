@@ -30,16 +30,16 @@ class CTDCoefficients:
 
 
 def detect_sensor_config(xml_file: str):
-    """Parse an SBE .XMLCON and derive everything read_hex_file needs to decode
-    the matching .hex file, with no manual/hardcoded sensor list.
+    """Parse an SBE .XMLCON and derive everything read_hex_file needs to
+    decode the matching .hex file.
 
-    Works for any hex/XMLCON pair (any cruise, any instrument fit-out) because
-    the XMLCON already states this directly:
-      - <FrequencyChannelsSuppressed> / <VoltageWordsSuppressed> on <Instrument>
-      - <SensorArray> lists every installed sensor in wire/byte order by index
+    INPUT:
+      xml_file  =  path to a .XMLCON file                       [ str ]
 
-    Returns (enabled_sensors, frequency_channels_suppressed, voltage_words_suppressed)
-    ready to pass straight into seabirdscientific.instrument_data.read_hex_file.
+    OUTPUT:
+      enabled_sensors                =  sensors, in wire order    [ list ]
+      frequency_channels_suppressed  =  from <Instrument>           [ int ]
+      voltage_words_suppressed       =  from <Instrument>            [ int ]
     """
     import seabirdscientific.instrument_data as id_sbs
 
@@ -117,14 +117,13 @@ _VOLTAGE_SENSOR_COEFF_FIELD = {
 
 
 def detect_voltage_channel_map(xml_file: str) -> dict:
-    """Map each recognized auxiliary sensor to the actual 'volt N' raw_data
-    column it lives on, by reading the SensorArray's real order - instead of
-    assuming a fixed wiring like 'oxygen is always volt 2'.
+    """Map each recognized auxiliary sensor to its 'volt N' raw_data column.
 
-    Returns e.g. {"oxygen_primary": "volt 2", "chlorophyll": "volt 7"} - only
-    for sensor types _VOLTAGE_SENSOR_COEFF_FIELD (and load_xmlcon) know about;
-    an XMLCON entry of an unrecognized type simply doesn't appear (its channel
-    still gets decoded by read_hex_file, just has no automatic conversion).
+    INPUT:
+      xml_file  =  path to a .XMLCON file               [ str ]
+
+    OUTPUT:
+      e.g. {"oxygen_primary": "volt 2", "chlorophyll": "volt 7"}    [ dict ]
     """
     root = ET.parse(xml_file).getroot()
     instrument = root.find(".//Instrument")
@@ -157,6 +156,12 @@ def detect_voltage_channel_map(xml_file: str) -> dict:
 
 def load_xmlcon(xml_file: str) -> CTDCoefficients:
     """Read a .xmlcon to extract calibration coefficients.
+
+    INPUT:
+      xml_file  =  path to a .XMLCON file          [ str ]
+
+    OUTPUT:
+      calibration coefficients, one field per sensor type    [ CTDCoefficients ]
     """
     tree = ET.parse(xml_file)
     root = tree.getroot()

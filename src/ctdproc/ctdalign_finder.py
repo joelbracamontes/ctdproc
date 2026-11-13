@@ -1,8 +1,13 @@
 def ctdalign_finder(yaml_file):
-    """Measure the time lag between a lead/lag variable pair (e.g. pressure
-    vs. conductivity) across a range of casts, using crosshigh's cross-
-    correlation, and write per-cast + campaign-average lag offsets ready to
-    paste into an `align` step's `offset:` list.
+    """Measure the time lag between a lead/lag variable pair across a range
+    of casts, via crosshigh's cross-correlation.
+
+    INPUT:
+      yaml_file  =  path to an alignment-finder YAML config    [ str or Path ]
+
+    OUTPUT:
+      writes alignment_report.csv (per-cast and campaign-average
+      lag offsets); no return value
     """
 
     import yaml

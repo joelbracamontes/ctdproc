@@ -1,6 +1,12 @@
 def _find_companion_xmlcon(hex_file):
-    """Find the .XMLCON that goes with a .hex file - same base name, either
-    case (some cruises' raw folders use .XMLCON, some lowercase .xmlcon)."""
+    """Find the .XMLCON file next to a .hex file.
+
+    INPUT:
+      hex_file  =  path to a raw .hex file           [ str or Path ]
+
+    OUTPUT:
+      path to the matching .XMLCON/.xmlcon file       [ Path ]
+    """
     from pathlib import Path
 
     hex_path = Path(hex_file)
@@ -15,13 +21,17 @@ def _find_companion_xmlcon(hex_file):
 
 
 def _strip_truncated_trailing_scan(hex_file):
-    """Some raw .hex files end mid-write, leaving a NUL-padded, truncated
-    final scan line that crashes the hex decoder (seen in MSM142's
-    msm_142_1_006.hex: last line out of 216545 has a stray '\\x00' and is
-    shorter than every other data line). If the file's last data line looks
-    corrupted this way, write a cleaned copy (original scans minus that one
-    bad trailing line) to a temp file and return its path; otherwise return
-    hex_file unchanged. Never modifies the original raw file.
+    """Remove a truncated, NUL-padded final scan line from a raw .hex file.
+
+    Writes a cleaned copy to a temp file and returns its path if the last
+    data line looks corrupted; otherwise returns hex_file unchanged. Never
+    modifies the original file.
+
+    INPUT:
+      hex_file  =  path to a raw .hex file                 [ str or Path ]
+
+    OUTPUT:
+      path to a cleaned temp file, or hex_file unchanged     [ str ]
     """
     import tempfile
     import os
@@ -47,13 +57,18 @@ def _strip_truncated_trailing_scan(hex_file):
 
 
 def load_raw_data(hex_file, xmlconfile=None):
-    """Decode a raw SBE .hex file. The sensor configuration (which channels
-    are present, in what order, how many frequency/voltage words) is derived
-    automatically from the companion .XMLCON - no manual/hardcoded sensor list
-    needed, so this works for any cruise's hex/XMLCON pair unchanged.
+    """Decode a raw SBE .hex file into a DataFrame of raw channel counts.
 
-    xmlconfile is optional; if not given, it's found next to hex_file by
-    matching base filename (the convention used throughout this data set).
+    Sensor configuration (channels present, order, frequency/voltage word
+    counts) is read from the companion .XMLCON.
+
+    INPUT:
+      hex_file    =  path to a raw .hex file                       [ str or Path ]
+      xmlconfile  =  path to the matching .XMLCON (optional;
+                     found next to hex_file if not given)           [ str or Path ]
+
+    OUTPUT:
+      raw channel counts, one row per scan                          [ DataFrame ]
     """
     import seabirdscientific.instrument_data as id_sbs
     from .parsers import detect_sensor_config
@@ -86,11 +101,19 @@ def load_raw_data(hex_file, xmlconfile=None):
 
 
 def convert_data(raw_data,xmlconfile,sample_interval,convert_optional=True):
-    """convert_optional=False skips chlorophyll/turbidity/oxygen conversion
-    entirely (set to NaN instead) - a real speedup for callers that only
-    need temperature/conductivity/pressure/salinity (e.g. the align/celltm/
-    slope finders), since convert_sbe43_oxygen's hysteresis correction is an
-    unvectorized Python loop over every scan (~140k iterations/station)."""
+    """Convert raw channel counts to physical units.
+
+    INPUT:
+      raw_data          =  raw channel counts from load_raw_data      [ DataFrame ]
+      xmlconfile        =  path to the matching .XMLCON               [ str or Path ]
+      sample_interval   =  time between scans                        [ s ]
+      convert_optional  =  also convert chlorophyll/turbidity/oxygen
+                           (skipped, filled with NaN, if False)       [ bool ]
+
+    OUTPUT:
+      pressure, temperature, conductivity, salinity, and optional
+      sensors, one row per scan                                       [ DataFrame ]
+    """
     from .parsers import CTDCoefficients, load_xmlcon, detect_voltage_channel_map
     import seabirdscientific.conversion as conv
     import seabirdscientific.instrument_data as id_sbs

@@ -1,11 +1,11 @@
 def CTD_process(yaml_file):
     """Run the full per-cast CTD processing pipeline from a YAML config.
 
-    For each cast index listed in the config, loads the raw .hex/.xmlcon pair,
-    converts it to physical units, applies each configured processing step
-    (align/wild_edit/celltm/slope_corr/loop_edit/bin) in order, and writes an
-    SBE-style .cnv file (and/or per-bin files) with an ASCII header rebuilt
-    from the original hex file's own header lines.
+    INPUT:
+      yaml_file  =  path to a cast-processing YAML config    [ str or Path ]
+
+    OUTPUT:
+      writes one .cnv file (and/or per-bin files) per cast; no return value
     """
     import yaml
     import warnings
