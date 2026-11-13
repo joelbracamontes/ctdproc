@@ -14,6 +14,45 @@ logger = logging.getLogger(__name__)
 BAD_FLAG_VALUE = np.float64(-9.99e-29)
 
 
+STEP_DESCRIPTIONS = {
+    "align": "time-shift a sensor to correct lag relative to another (e.g. conductivity cell lag behind temperature)",
+    "wild_edit": "flag outlier scans via a two-pass standard-deviation test",
+    "low_filter": "low-pass filter to smooth high-frequency noise",
+    "celltm": "conductivity cell thermal-mass correction + recomputed salinity",
+    "slope_corr": "scale conductivity by a fitted slope (gain) + recomputed salinity",
+    "loop_edit": "flag scans affected by ship-roll-induced pressure reversals/slowdowns",
+    "bin": "bin-average the cast by elapsed_time/scans/pressure",
+}
+
+
+def validate_features(features, valid_names):
+    """Check every `features:` step name against valid_names up front, before
+    any processing starts. A misspelled name (e.g. 'wild_eddit') otherwise
+    matches no branch in the dispatch chain that runs each step and is
+    silently skipped - the cast still processes, just without that step,
+    with no error and nothing in the output to say it was ever skipped.
+    Collects every bad name at once, not just the first, so a config with
+    more than one typo doesn't take more than one fix-and-rerun cycle.
+    """
+    bad_names = sorted(
+        {
+            step.get("name")
+            for step in (features or [])
+            if step.get("name") not in valid_names
+        },
+        key=str,
+    )
+    if bad_names:
+        options = "\n".join(
+            f"  - {name}: {STEP_DESCRIPTIONS.get(name, '(no description)')}"
+            for name in valid_names
+        )
+        raise ValueError(
+            f"config error: unknown features step name(s) {bad_names}. "
+            f"Valid options here are:\n{options}"
+        )
+
+
 def check_step_lists(step_name, **lists):
     """Catch two config mistakes that would otherwise fail silently or with
     a confusing low-level error: a misspelled key (step.get returns [] for

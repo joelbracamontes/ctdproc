@@ -145,10 +145,6 @@ MIXSED2_045,9.0,34.7166
 - `cellTM_finder`'s search grid (α 0.01–0.09, τ 1–16) is fixed, same for
   every cast and sensor, not something you can set per campaign.
 - `slopecorrection_finder` and `cellTM_finder` need improvement for outliers detection routines
-- `main.py`'s `convert` and `time_ref` constants used to crash if left out of
-  the config (`KeyError`/`NameError`) even though they looked optional -
-  fixed: `convert` now raises a clear error naming the missing key,
-  `time_ref` now just skips the start-time header line if left out.
 
 ---
 

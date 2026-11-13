@@ -33,6 +33,7 @@ def cellTM_finder(yaml_file):
         crosshigh,
         find_opt_alp_tat_fast,
         check_step_lists,
+        validate_features,
 
     )
     from .utilities import extract_head_hex, add_timestamp
@@ -59,6 +60,7 @@ def cellTM_finder(yaml_file):
         temperature_touse=calib_step.get("temperature_touse", []),
         conductivity_touse=calib_step.get("conductivity_touse", []),
     )
+    validate_features(config.get('features'), ['align', 'low_filter', 'wild_edit'])
     for j in list(range(config['constants']['ind'][0],config['constants']['ind'][1]+1)):
 
         raw_data = load_raw_data("../data/"+config['constants']['name']+'_'+str(j).zfill(3)+'.hex')
