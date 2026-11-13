@@ -5,12 +5,11 @@ constants:
   convert: 'yes'
   time_ref: 'System UTC'
   data_dir: "../data/"        # override in config.local.yaml
-#  output_dir: "/"   # override in config.local.yaml
 
 features:
   - name: "align"
     variables: ["conductivity","conductivity2"]
-    offset: [0.0,0.0]  # 
+    offset: [0.0,0.0]
   - name: "wild_edit"
     variables: ["temperature","temperature2","conductivity","conductivity2","pressure"]
     std_pass_1: [2.0,2.0,2.0,2.0,2.0]

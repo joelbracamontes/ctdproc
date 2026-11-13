@@ -1,5 +1,3 @@
-# src/parsers.py
-
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from typing import Optional
@@ -25,7 +23,7 @@ class CTDCoefficients:
     oxygen_primary: Optional[Oxygen43Coefficients] = None
     oxygen_secondary: Optional[Oxygen43Coefficients] = None
     chlorophyll: Optional[ECOCoefficients] = None
-    turbidity: Optional[ECOCoefficients] = None  # It is missing
+    turbidity: Optional[ECOCoefficients] = None
     altimeter: Optional[AltimeterCoefficients] = None
 
 
@@ -198,7 +196,7 @@ def load_xmlcon(xml_file: str) -> CTDCoefficients:
         cond = sensor.find("ConductivitySensor")
         if cond is not None:
             eq1 = cond.find('./Coefficients[@equation="1"]')
-            if eq1 is not None:  # CHECK
+            if eq1 is not None:
                 obj = ConductivityCoefficients(
                     g=float(eq1.findtext("G")),
                     h=float(eq1.findtext("H")),

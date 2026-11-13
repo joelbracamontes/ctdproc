@@ -155,10 +155,8 @@ def CTD_process(yaml_file):
                     filenames
                     ):
                     file_text = []
-                    # all processing before binning
                     file_text.extend(text_content)
                     file_text.extend(text_process)
-                    # only this bin's own information
                     file_text.extend(bin_log)
                 
                     with open(filename, "w", encoding="utf-8") as f:
