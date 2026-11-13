@@ -10,19 +10,34 @@ logger = logging.getLogger(__name__)
 
 
 def _bin_average(data, **kwargs):
-    """Thin pd.DataFrame <-> xr.Dataset adapter around seabirdscientific
-    3.1.2's bin_average, which now takes/returns an xr.Dataset (was
-    pd.DataFrame in 2.7.8); the rest of this pipeline is still DataFrame-based.
+    """Bin-average a DataFrame via seabirdscientific's bin_average.
+
+    INPUT:
+      data      =  cast data                                   [ DataFrame ]
+      **kwargs  =  passed through to bin_average                 [ see seabirdscientific.processing.bin_average ]
+
+    OUTPUT:
+      bin-averaged cast data                                      [ DataFrame ]
     """
+    # seabirdscientific 3.1.2's bin_average takes/returns an xr.Dataset (was
+    # pd.DataFrame in 2.7.8); the rest of this pipeline is still DataFrame-based.
     binned = proc.bin_average(dataset=xr.Dataset.from_dataframe(data), **kwargs)
     return binned.to_dataframe().reset_index(drop=True)
 
 
 
 def apply_align(data, step, dt, bad_flag_value):
-    """Time-shift each listed variable by its offset (seconds) via
-    proc.align_ctd, to correct for sensor lag (e.g. conductivity cell lag
-    behind temperature). Returns the updated DataFrame and a .cnv-style log.
+    """Time-shift each listed variable by its offset, to correct sensor lag.
+
+    INPUT:
+      data            =  cast data                            [ DataFrame ]
+      step            =  config dict with 'variables'/'offset' lists    [ dict ]
+      dt              =  sample interval                        [ s ]
+      bad_flag_value  =  sentinel for flagged scans               [ float ]
+
+    OUTPUT:
+      data  =  updated cast data                                 [ DataFrame ]
+      text  =  .cnv-style processing log lines                      [ list[str] ]
     """
 
     text = []
@@ -48,9 +63,16 @@ def apply_align(data, step, dt, bad_flag_value):
 
 
 def apply_low_filter(data, step, dt):
-    """Apply a low-pass filter (given time_constant per variable, via
-    filt_interp) to smooth high-frequency noise - typically used on pressure
-    before downstream steps that need a smooth descent/ascent rate.
+    """Low-pass filter each listed variable, to smooth high-frequency noise.
+
+    INPUT:
+      data  =  cast data                                      [ DataFrame ]
+      step  =  config dict with 'variables'/'time_constant' lists    [ dict ]
+      dt    =  sample interval                                  [ s ]
+
+    OUTPUT:
+      data  =  updated cast data                                [ DataFrame ]
+      text  =  .cnv-style processing log lines                     [ list[str] ]
     """
 
     text = []
@@ -77,9 +99,19 @@ def apply_low_filter(data, step, dt):
 
 
 def apply_wild_edit(data, step, bad_flag_value):
-    """Flag outlier scans in each listed variable via proc.wild_edit's
-    two-pass standard-deviation test (per scans_per_block window), writing
-    bad_flag_value in place of anything flagged.
+    """Flag outlier scans in each listed variable via a two-pass
+    standard-deviation test.
+
+    INPUT:
+      data            =  cast data                           [ DataFrame ]
+      step            =  config dict with 'variables'/'std_pass_1'/
+                         'std_pass_2'/'scans_per_block'/
+                         'distance_to_mean' lists               [ dict ]
+      bad_flag_value  =  sentinel for flagged scans              [ float ]
+
+    OUTPUT:
+      data  =  updated cast data                                 [ DataFrame ]
+      text  =  .cnv-style processing log lines                      [ list[str] ]
     """
 
     text = []
@@ -128,12 +160,18 @@ def apply_wild_edit(data, step, bad_flag_value):
 
 def apply_celltm(data, step, sample_interval, bad_flag_value):
     """Apply the cell thermal mass correction to each listed conductivity
-    channel (given amplitude/time_constant), and recompute the matching
-    salinity from the corrected conductivity. Bad-flagged scans are masked
-    and interpolated before filtering (cell_thermal_mass differentiates
-    temperature, so a flagged value would otherwise look like a genuine
-    multi-degree jump and corrupt a trailing stretch of output), then
-    restored to bad_flag_value afterward.
+    channel, and recompute the matching salinity from corrected conductivity.
+
+    INPUT:
+      data             =  cast data                           [ DataFrame ]
+      step             =  config dict with 'variables'/'amplitude'/
+                          'time_constant' lists                  [ dict ]
+      sample_interval  =  time between scans                     [ s ]
+      bad_flag_value   =  sentinel for flagged scans                [ float ]
+
+    OUTPUT:
+      data  =  updated cast data                                 [ DataFrame ]
+      text  =  .cnv-style processing log lines                      [ list[str] ]
     """
 
     text = []
@@ -204,8 +242,17 @@ def apply_celltm(data, step, sample_interval, bad_flag_value):
     return data, text
 
 def apply_slope_correction(data, step, bad_flag_value=np.float64(-9.99e-29)):
-    """Scale each listed conductivity channel by its fitted slope (gain) m,
-    and recompute the matching salinity from the corrected conductivity.
+    """Scale each listed conductivity channel by its fitted slope (gain),
+    and recompute the matching salinity from corrected conductivity.
+
+    INPUT:
+      data            =  cast data                            [ DataFrame ]
+      step            =  config dict with 'variables'/'slope' lists    [ dict ]
+      bad_flag_value  =  sentinel for flagged scans              [ float ]
+
+    OUTPUT:
+      data  =  updated cast data                                 [ DataFrame ]
+      text  =  .cnv-style processing log lines                      [ list[str] ]
     """
     text = []
     data_copy=data.copy()
@@ -255,10 +302,18 @@ def apply_slope_correction(data, step, bad_flag_value=np.float64(-9.99e-29)):
 
 
 def apply_loop_edit(data, step, sample_interval, bad_flag_value):
-    """Flag scans affected by ship-roll-induced pressure reversals/slowdowns
-    via proc.loop_edit_pressure, so a wire oscillation isn't mistaken for a
-    second descent. Not suitable for calibration-dip casts, which have
-    deliberate multi-minute stationary bottle-stops.
+    """Flag scans affected by ship-roll-induced pressure reversals/slowdowns.
+    Not suitable for calibration-dip casts (deliberate stationary bottle-stops).
+
+    INPUT:
+      data             =  cast data                          [ DataFrame ]
+      step             =  config dict with loop-edit parameters    [ dict ]
+      sample_interval  =  time between scans                   [ s ]
+      bad_flag_value   =  sentinel for flagged scans             [ float ]
+
+    OUTPUT:
+      data  =  updated cast data, with 'flag' column set         [ DataFrame ]
+      text  =  .cnv-style processing log lines                     [ list[str] ]
     """
 
     text = []
@@ -304,10 +359,20 @@ def apply_loop_edit(data, step, sample_interval, bad_flag_value):
 
 
 def apply_bin(data, step, bad_flag_value, base_name):
-    """Bin-average the cast (by elapsed_time, scan count, or pressure) for
-    each bin_type/bin_size/type_profile triplet in `step`, split by cast
-    direction (BOTH/UP/DOWN). Returns one DataFrame, log, and output
-    filename per triplet - ready to write out as separate .cnv files.
+    """Bin-average the cast for each bin_type/bin_size/type_profile triplet,
+    split by cast direction.
+
+    INPUT:
+      data            =  cast data                             [ DataFrame ]
+      step            =  config dict with 'bin_type'/'bin_size'/
+                         'type_profile' lists                     [ dict ]
+      bad_flag_value  =  sentinel for flagged scans                [ float ]
+      base_name       =  cast base filename, for output names       [ str ]
+
+    OUTPUT:
+      bin_results   =  one DataFrame per triplet                    [ list[DataFrame] ]
+      bin_logs      =  one .cnv-style log per triplet                 [ list[list[str]] ]
+      output_names  =  one output filename per triplet                 [ list[str] ]
     """
 
     bin_results = []

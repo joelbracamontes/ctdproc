@@ -1,13 +1,14 @@
 def slopecorrection_finder(yaml_file):
-    """Fit a per-sensor-pair conductivity slope (gain) correction from CTD vs.
-    bottle/salinometer comparisons, using iterative 3-sigma outlier rejection.
+    """Fit a per-sensor-pair conductivity slope (gain) correction from CTD
+    vs. bottle/salinometer comparisons, using iterative 3-sigma outlier
+    rejection.
 
-    Reads a YAML config (sensor pairs, bottle-stop offset/duration, bottle
-    salinity CSV), reprocesses each station's raw CTD data through the usual
-    align/wild_edit/celltm pipeline, averages it at each bottle stop, and
-    compares it against bottle conductivity (from measured salinity) to fit
-    one slope per sensor pair. Writes slope_report.csv (summary + detailed
-    per-bottle log) and two diagnostic ratio plots per sensor pair.
+    INPUT:
+      yaml_file  =  path to a slope-correction-finder YAML config    [ str or Path ]
+
+    OUTPUT:
+      writes slope_report.csv (summary + detailed per-bottle log) and
+      two ratio plots per sensor pair; no return value
     """
 
     import yaml

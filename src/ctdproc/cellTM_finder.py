@@ -1,11 +1,14 @@
 def cellTM_finder(yaml_file):
-    """Grid-search the cell thermal mass (alpha, tau) correction parameters
-    that minimize the pressure-bin-averaged salinity difference between a
-    cast's down- and up-cast, for each cast in a config's index range.
+    """Grid-search the cell thermal mass (alpha, tau) correction that
+    minimizes the down/up-cast salinity difference, for each cast in a
+    config's index range.
 
-    Writes per-cast results and a campaign average (excluding grid-edge-
-    pinned fits, which indicate the true optimum lies outside the searched
-    range) to alpha_tau_report.csv, plus a diagnostic contour plot per cast.
+    INPUT:
+      yaml_file  =  path to a celltm-finder YAML config    [ str or Path ]
+
+    OUTPUT:
+      writes alpha_tau_report.csv (per-cast and campaign-average
+      alpha/tau) and one contour plot per cast; no return value
     """
 
     import yaml
